@@ -204,7 +204,10 @@ main{flex:1;padding:0 16px 30px;position:relative;}
 <div id="app">
   <header>
     <h1>DATA<span> APP</span></h1>
-    <button class="icon-btn" id="btnSettings">⚙</button>
+    <div style="display:flex;gap:8px;">
+      <button class="icon-btn" id="btnSearch">🔍</button>
+      <button class="icon-btn" id="btnSettings">⚙</button>
+    </div>
   </header>
 
   <main>
@@ -225,6 +228,18 @@ main{flex:1;padding:0 16px 30px;position:relative;}
       <button class="nav-btn" data-page="calendar"><span class="ic">▦</span>Calendário</button>
     </div>
   </nav>
+</div>
+
+<!-- Search overlay -->
+<div class="overlay" id="overlaySearch">
+  <div class="sheet" style="min-height:75vh;">
+    <button class="close-x" id="closeSearch">✕</button>
+    <h2>Buscar</h2>
+    <div class="field">
+      <input type="text" id="searchInput" placeholder="Nome, evento ou feriado..." autocomplete="off">
+    </div>
+    <div id="searchResults" style="margin-top:6px;"></div>
+  </div>
 </div>
 
 <!-- Settings overlay -->
@@ -582,6 +597,51 @@ const overlayMemorial = document.getElementById('overlayMemorial');
 document.getElementById('openMemorial').onclick = ()=>{ overlaySettings.classList.remove('show'); renderMemorial(); overlayMemorial.classList.add('show'); };
 document.getElementById('closeMemorial').onclick = ()=> overlayMemorial.classList.remove('show');
 overlayMemorial.onclick = e=>{ if(e.target===overlayMemorial) overlayMemorial.classList.remove('show'); };
+
+// ---------- Search ----------
+const overlaySearch = document.getElementById('overlaySearch');
+const searchInput = document.getElementById('searchInput');
+document.getElementById('btnSearch').onclick = ()=>{
+  overlaySearch.classList.add('show');
+  setTimeout(()=>searchInput.focus(), 150);
+  renderSearch('');
+};
+document.getElementById('closeSearch').onclick = ()=> overlaySearch.classList.remove('show');
+overlaySearch.onclick = e=>{ if(e.target===overlaySearch) overlaySearch.classList.remove('show'); };
+searchInput.addEventListener('input', ()=> renderSearch(searchInput.value));
+
+function normalize(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function renderSearch(query){
+  const box = document.getElementById('searchResults');
+  const q = normalize(query.trim());
+  const year = new Date().getFullYear();
+  // search across stored items (all types) + holidays for current & next year (covers recurring lookups)
+  const pool = [...items, ...getHolidays(year), ...getHolidays(year+1)];
+
+  if(!q){
+    box.innerHTML = `<div class="empty-state">Digite um nome, evento ou feriado para buscar.</div>`;
+    return;
+  }
+  const results = pool.filter(ev => normalize(ev.titulo).includes(q) || normalize(ev.descricao).includes(q));
+  // dedupe holidays appearing twice (year/year+1 same titulo+dia+mes)
+  const seen = new Set();
+  const deduped = results.filter(ev=>{
+    const key = ev.tipo+'|'+ev.titulo+'|'+ev.dia+'|'+ev.mes;
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  deduped.sort((a,b)=> (a.mes*100+a.dia) - (b.mes*100+b.dia));
+
+  if(!deduped.length){ box.innerHTML = `<div class="empty-state">Nenhum resultado para "${escapeHtml(query)}".</div>`; return; }
+  box.innerHTML = deduped.map(ev=>eventCardHtml(ev,year)).join('');
+  attachCardHandlers(box);
+  // close search before opening edit sheet
+  box.querySelectorAll('.event-card').forEach(card=>{
+    if(card.dataset.holiday==="true") return;
+    card.addEventListener('click', ()=> overlaySearch.classList.remove('show'));
+  });
+}
 
 // ---------- Edit/create sheet ----------
 const overlay = document.getElementById('overlay');
