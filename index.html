@@ -280,8 +280,11 @@ main{flex:1;padding:0 16px 30px;position:relative;}
       </div>
     </div>
     <div class="field" id="anoField">
-      <label id="anoLabel">Idade atual (opcional)</label>
-      <input type="number" id="f_ano" placeholder="34">
+      <label id="anoFieldLabel">Idade / Ano (preencha um dos dois)</label>
+      <div class="row2">
+        <input type="number" id="f_idade" placeholder="Idade">
+        <input type="number" id="f_ano" placeholder="Ano">
+      </div>
       <div class="hint" id="anoHint"></div>
     </div>
     <div class="field">
@@ -594,20 +597,52 @@ function refreshPills(){
     p.classList.toggle('active',active);
     p.style.background = active ? 'var(--accent)' : '';
   });
-  const label = document.getElementById('anoLabel');
+  const label = document.getElementById('anoFieldLabel');
   const hint = document.getElementById('anoHint');
   if(editingType==='Aniversário'){
-    label.textContent = 'Idade atual (opcional)';
-    hint.textContent = 'Informe a idade que a pessoa tem agora — o app calcula o ano de nascimento e atualiza a idade automaticamente todo ano.';
+    label.textContent = 'Idade atual / Ano de nascimento';
+    hint.textContent = 'Preencha a idade OU o ano de nascimento — o app calcula o outro e mantém a idade sempre atualizada.';
   } else {
-    label.textContent = 'Há quanto tempo aconteceu? (opcional)';
+    label.textContent = 'Anos atrás / Ano do ocorrido';
     hint.textContent = editingType==='Falecimento'
-      ? 'Informe quantos anos atrás isso ocorreu — o app calcula e atualiza sozinho a cada ano.'
-      : 'Informe quantos anos atrás esse acontecimento ocorreu (opcional).';
+      ? 'Preencha há quantos anos faleceu OU o ano — o app calcula o outro e atualiza sozinho a cada ano.'
+      : 'Preencha há quantos anos OU o ano do acontecimento — o app calcula o outro automaticamente.';
   }
 }
-document.querySelectorAll('#typePills .type-pill').forEach(p=> p.onclick = ()=>{ editingType=p.dataset.v; refreshPills(); });
+document.querySelectorAll('#typePills .type-pill').forEach(p=> p.onclick = ()=>{
+  editingType=p.dataset.v; refreshPills();
+  const idadeVal = document.getElementById('f_idade').value;
+  if(idadeVal!==''){
+    const {dia,mes} = currentDiaMes();
+    if(dia&&mes){
+      const n = Number(idadeVal);
+      document.getElementById('f_ano').value = editingType==='Aniversário' ? birthYearFromAge(n,mes,dia) : (new Date().getFullYear()-n);
+    }
+  }
+});
 document.querySelectorAll('#recPills .type-pill').forEach(p=> p.onclick = ()=>{ editingRec=p.dataset.v; refreshPills(); });
+
+function currentDiaMes(){
+  return { dia: Number(document.getElementById('f_dia').value)||0, mes: Number(mesSelect.value)||0 };
+}
+document.getElementById('f_idade').addEventListener('input', ()=>{
+  const v = document.getElementById('f_idade').value;
+  const anoInput = document.getElementById('f_ano');
+  if(v===''){ return; }
+  const {dia,mes} = currentDiaMes();
+  if(!dia||!mes) return;
+  const n = Number(v);
+  anoInput.value = editingType==='Aniversário' ? birthYearFromAge(n,mes,dia) : (new Date().getFullYear()-n);
+});
+document.getElementById('f_ano').addEventListener('input', ()=>{
+  const v = document.getElementById('f_ano').value;
+  const idadeInput = document.getElementById('f_idade');
+  if(v===''){ return; }
+  const {dia,mes} = currentDiaMes();
+  if(!dia||!mes) return;
+  const refYear = Number(v);
+  idadeInput.value = editingType==='Aniversário' ? ageFromRefYear(refYear,mes,dia) : (new Date().getFullYear()-refYear);
+});
 
 function openSheet(item){
   document.getElementById('sheetTitle').textContent = item ? "Editar evento" : "Novo evento";
@@ -618,13 +653,14 @@ function openSheet(item){
   editingType = item ? item.tipo : 'Aniversário';
   editingRec = item ? (item.recorrente||'Sim') : 'Sim';
 
-  let anoInputVal = '';
+  let anoVal = '', idadeVal = '';
   if(item && item.ano_nascimento){
     const refYear = Number(item.ano_nascimento);
-    if(editingType==='Aniversário') anoInputVal = ageFromRefYear(refYear, Number(item.dia), Number(item.mes));
-    else anoInputVal = new Date().getFullYear() - refYear;
+    anoVal = refYear;
+    idadeVal = editingType==='Aniversário' ? ageFromRefYear(refYear, Number(item.dia), Number(item.mes)) : (new Date().getFullYear()-refYear);
   }
-  document.getElementById('f_ano').value = anoInputVal;
+  document.getElementById('f_ano').value = anoVal;
+  document.getElementById('f_idade').value = idadeVal;
   document.getElementById('f_descricao').value = item ? (item.descricao||'') : '';
   refreshPills();
   document.getElementById('btnDelete').style.display = item ? 'block' : 'none';
@@ -642,12 +678,8 @@ document.getElementById('btnSave').onclick = async ()=>{
   if(!titulo || !dia || dia<1 || dia>31){ showToast("Preencha título e dia corretamente"); return; }
 
   const id = document.getElementById('f_id').value;
-  const inputVal = document.getElementById('f_ano').value;
-  let ano_nascimento = '';
-  if(inputVal!==''){
-    const n = Number(inputVal);
-    ano_nascimento = editingType==='Aniversário' ? birthYearFromAge(n,mes,dia) : (new Date().getFullYear()-n);
-  }
+  const anoVal = document.getElementById('f_ano').value;
+  let ano_nascimento = anoVal !== '' ? Number(anoVal) : '';
 
   const item = { titulo, dia, mes, ano_nascimento, tipo:editingType, descricao:document.getElementById('f_descricao').value.trim(), recorrente:editingRec };
 
