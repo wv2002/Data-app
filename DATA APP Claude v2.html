@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DATA APP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1115;
+  --surface:#171a21;
+  --surface-2:#1f232c;
+  --border:#2a2f3a;
+  --text:#eef0f3;
+  --text-dim:#9aa1ad;
+  --text-faint:#5b626f;
+  --accent:#ffb454;
+  --accent-soft:rgba(255,180,84,0.14);
+  --aniversario:#ffb454;
+  --falecimento:#7c8aa3;
+  --acontecimento:#5ed3b3;
+  --feriado:#c98bf0;
+  --danger:#e6708a;
+  --radius:16px;
+  --radius-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Outfit',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+#app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:78px;}
+
+header{
+  padding:24px 20px 6px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+header h1{font-size:19px;font-weight:800;letter-spacing:-0.01em;}
+header h1 span{color:var(--accent);}
+.icon-btn{
+  width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--border);
+  color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;
+}
+
+main{flex:1;padding:0 16px 30px;position:relative;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ---- Bottom nav ---- */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
+  display:flex;justify-content:center;z-index:40;
+}
+.bottom-nav-inner{max-width:560px;width:100%;display:flex;}
+.nav-btn{
+  flex:1;background:none;border:none;color:var(--text-faint);font-family:inherit;
+  padding:12px 0 16px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:11px;font-weight:600;
+}
+.nav-btn .ic{font-size:19px;}
+.nav-btn.active{color:var(--accent);}
+
+/* ---- Home ---- */
+.home-top{display:flex;gap:12px;align-items:flex-start;margin-top:10px;}
+.today-card{
+  flex:1;background:linear-gradient(160deg,var(--surface) 0%,var(--surface-2) 100%);
+  border:1px solid var(--border);border-radius:20px;padding:20px 18px;min-height:160px;
+}
+.today-card .label{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.today-card .date-big{font-size:38px;font-weight:800;line-height:1;margin:6px 0 2px;}
+.today-card .weekday{font-size:13px;color:var(--text-dim);margin-bottom:14px;}
+.mini-cal{
+  width:108px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 8px;flex-shrink:0;cursor:pointer;
+}
+.mini-cal .mini-head{font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;margin-bottom:6px;text-transform:uppercase;}
+.mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.mini-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:7px;color:var(--text-faint);position:relative;border-radius:3px;}
+.mini-cell.today{background:var(--accent);color:#1a1306;font-weight:700;}
+.mini-cell .mini-dot{position:absolute;bottom:1px;width:3px;height:3px;border-radius:50%;}
+
+.section-label{font-size:12px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin:22px 4px 10px;}
+.tomorrow-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;
+}
+.tomorrow-card .tcount{font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+
+/* ---- Calendar ---- */
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 4px 18px;}
+.cal-header .month-label{font-size:18px;font-weight:700;}
+.cal-header .nav-btn2{
+  width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;
+}
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:6px;}
+.weekdays span{font-size:11px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.day-cell{
+  aspect-ratio:1;border-radius:12px;background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;cursor:pointer;border:1px solid transparent;transition:border-color .15s;padding:4px;
+}
+.day-cell.empty{background:none;cursor:default;}
+.day-cell:not(.empty):hover{border-color:var(--border);}
+.day-cell .num{font-size:13px;font-weight:600;color:var(--text-dim);}
+.day-cell.today{background:var(--accent-soft);}
+.day-cell.today .num{color:var(--accent);}
+.dots{display:flex;gap:3px;margin-top:3px;}
+.dots span{width:5px;height:5px;border-radius:50%;}
+
+/* ---- Cards ---- */
+.event-card{
+  background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;
+  display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);cursor:pointer;
+}
+.event-card:active{background:var(--surface-2);}
+.event-dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.event-body{flex:1;min-width:0;}
+.event-title{font-size:15px;font-weight:600;line-height:1.3;}
+.event-meta{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+.event-tag{
+  display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  padding:2px 7px;border-radius:5px;margin-top:6px;
+}
+.event-desc{font-size:13px;color:var(--text-dim);margin-top:6px;line-height:1.4;}
+.event-age{
+  font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);
+  padding:2px 8px;border-radius:999px;white-space:nowrap;
+}
+.empty-state{text-align:center;padding:50px 20px;color:var(--text-faint);font-size:14px;}
+.timeline-month{font-size:12px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin:22px 4px 10px;}
+.timeline-month:first-child{margin-top:6px;}
+
+/* ---- FAB ---- */
+.fab{
+  position:fixed;bottom:90px;right:20px;width:56px;height:56px;border-radius:50%;
+  background:var(--accent);color:#1a1306;border:none;font-size:27px;font-weight:400;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 8px 24px rgba(255,180,84,0.35);z-index:30;
+}
+
+/* ---- Overlay / sheet (shared) ---- */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);
+  display:none;align-items:flex-end;justify-content:center;z-index:50;
+}
+.overlay.show{display:flex;}
+.sheet{
+  background:var(--surface);width:100%;max-width:560px;border-radius:24px 24px 0 0;
+  padding:24px 20px 28px;max-height:90vh;overflow-y:auto;position:relative;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.sheet h2{font-size:18px;font-weight:700;margin-bottom:18px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:11px 12px;color:var(--text);font-family:inherit;font-size:14.5px;outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:64px;}
+.field .hint{font-size:11.5px;color:var(--text-faint);margin-top:5px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.type-pills{display:flex;gap:8px;}
+.type-pill{
+  flex:1;text-align:center;padding:9px 0;border-radius:999px;border:1px solid var(--border);
+  font-size:12.5px;font-weight:600;color:var(--text-dim);cursor:pointer;background:var(--surface-2);
+}
+.type-pill.active{color:#0f1115;border-color:transparent;}
+.actions{display:flex;gap:10px;margin-top:20px;}
+.btn{flex:1;padding:13px;border-radius:var(--radius-sm);border:none;font-family:inherit;font-weight:600;font-size:14.5px;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#1a1306;}
+.btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(230,112,138,0.4);}
+.close-x{position:absolute;top:18px;right:18px;background:none;border:none;color:var(--text-faint);font-size:20px;cursor:pointer;}
+
+.settings-item{
+  display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.settings-item:last-child{border-bottom:none;}
+.settings-item .ic{
+  width:38px;height:38px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.settings-item .txt{font-size:14.5px;font-weight:600;}
+.settings-item .sub{font-size:12px;color:var(--text-faint);}
+
+.toast{
+  position:fixed;bottom:96px;left:50%;transform:translateX(-50%);
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+  padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;z-index:60;
+  opacity:0;transition:opacity .2s;pointer-events:none;
+}
+.toast.show{opacity:1;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;padding:14px 4px 6px;font-size:11px;color:var(--text-dim);}
+.legend span{display:inline-flex;align-items:center;gap:5px;}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>DATA<span> APP</span></h1>
+    <button class="icon-btn" id="btnSettings">⚙</button>
+  </header>
+
+  <main>
+    <!-- PAGE 1: HOME -->
+    <div class="page active" id="page-home"></div>
+    <!-- PAGE 2: TIMELINE -->
+    <div class="page" id="page-timeline"></div>
+    <!-- PAGE 3: CALENDAR -->
+    <div class="page" id="page-calendar"></div>
+  </main>
+
+  <button class="fab" id="fabAdd">+</button>
+
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="nav-btn active" data-page="home"><span class="ic">●</span>Hoje</button>
+      <button class="nav-btn" data-page="timeline"><span class="ic">≡</span>Linha do tempo</button>
+      <button class="nav-btn" data-page="calendar"><span class="ic">▦</span>Calendário</button>
+    </div>
+  </nav>
+</div>
+
+<!-- Settings overlay -->
+<div class="overlay" id="overlaySettings">
+  <div class="sheet">
+    <button class="close-x" id="closeSettings">✕</button>
+    <h2>Configurações</h2>
+    <div class="settings-item" id="openMemorial">
+      <div class="ic">✝</div>
+      <div>
+        <div class="txt">Falecimentos</div>
+        <div class="sub">Seção exclusiva de memória</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Memorial overlay -->
+<div class="overlay" id="overlayMemorial">
+  <div class="sheet" style="min-height:70vh;">
+    <button class="close-x" id="closeMemorial">✕</button>
+    <h2>Falecimentos</h2>
+    <div id="memorialList"></div>
+  </div>
+</div>
+
+<!-- Edit/create overlay -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <button class="close-x" id="closeSheet">✕</button>
+    <h2 id="sheetTitle">Novo evento</h2>
+    <input type="hidden" id="f_id">
+    <div class="field">
+      <label>Tipo</label>
+      <div class="type-pills" id="typePills">
+        <div class="type-pill" data-v="Aniversário">Aniversário</div>
+        <div class="type-pill" data-v="Falecimento">Falecimento</div>
+        <div class="type-pill" data-v="Acontecimento">Acontecimento</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Título</label>
+      <input type="text" id="f_titulo" placeholder="Ex: Aniversário da Maria">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Dia</label>
+        <input type="number" id="f_dia" min="1" max="31" placeholder="15">
+      </div>
+      <div class="field">
+        <label>Mês</label>
+        <select id="f_mes"></select>
+      </div>
+    </div>
+    <div class="field" id="anoField">
+      <label id="anoLabel">Idade atual (opcional)</label>
+      <input type="number" id="f_ano" placeholder="34">
+      <div class="hint" id="anoHint"></div>
+    </div>
+    <div class="field">
+      <label>Descrição (opcional)</label>
+      <textarea id="f_descricao" placeholder="Observações, lembretes..."></textarea>
+    </div>
+    <div class="field">
+      <label>Repete todo ano?</label>
+      <div class="type-pills" id="recPills">
+        <div class="type-pill" data-v="Sim">Sim</div>
+        <div class="type-pill" data-v="Não">Não</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-danger" id="btnDelete" style="display:none;">Excluir</button>
+      <button class="btn btn-primary" id="btnSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxzvYl9_xNbO-OOT3IFE0MjSvvL_kpwtMS-VUyS-v-sRXdU9hQiAyS9O-mB5sZeb8eT/exec";
+
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DOW = ["D","S","T","Q","Q","S","S"];
+const TYPE_COLOR = {Aniversário:"var(--aniversario)",Falecimento:"var(--falecimento)",Acontecimento:"var(--acontecimento)",Feriado:"var(--feriado)"};
+
+let items = [];
+let calDate = new Date();
+let currentPage = "home";
+let editingType = "Aniversário";
+let editingRec = "Sim";
+const holidayCache = {};
+
+const mesSelect = document.getElementById('f_mes');
+MESES.forEach((m,i)=>{ const o=document.createElement('option'); o.value=i+1; o.textContent=m; mesSelect.appendChild(o); });
+
+// ---------- Date helpers ----------
+function hasHappenedThisYear(mes, dia){
+  const t = new Date();
+  return (mes < t.getMonth()+1) || (mes===t.getMonth()+1 && dia<=t.getDate());
+}
+function birthYearFromAge(idade, mes, dia){
+  const y = new Date().getFullYear();
+  return hasHappenedThisYear(mes,dia) ? y - idade : y - idade - 1;
+}
+function ageFromRefYear(refYear, mes, dia){
+  const y = new Date().getFullYear();
+  return hasHappenedThisYear(mes,dia) ? y - refYear : y - refYear - 1;
+}
+
+// ---------- Holidays ----------
+function easterDate(year){
+  const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
+  return new Date(year,month-1,day);
+}
+function addDays(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
+function nthSunday(year,month,n){ let d=new Date(year,month-1,1),c=0; while(true){ if(d.getDay()===0){c++; if(c===n) return d;} d=addDays(d,1); } }
+function getHolidays(year){
+  if(holidayCache[year]) return holidayCache[year];
+  const easter = easterDate(year);
+  const list = [
+    {dia:1,mes:1,titulo:"Ano Novo"},{dia:21,mes:4,titulo:"Tiradentes"},{dia:1,mes:5,titulo:"Dia do Trabalho"},
+    {dia:7,mes:9,titulo:"Independência do Brasil"},{dia:12,mes:10,titulo:"Nossa Senhora Aparecida"},
+    {dia:2,mes:11,titulo:"Finados"},{dia:15,mes:11,titulo:"Proclamação da República"},{dia:25,mes:12,titulo:"Natal"},
+  ];
+  const movable = [
+    {date:addDays(easter,-47),titulo:"Carnaval"},{date:addDays(easter,-46),titulo:"Quarta-feira de Cinzas"},
+    {date:addDays(easter,-2),titulo:"Sexta-feira Santa"},{date:easter,titulo:"Páscoa"},{date:addDays(easter,60),titulo:"Corpus Christi"},
+  ];
+  movable.forEach(m=>list.push({dia:m.date.getDate(),mes:m.date.getMonth()+1,titulo:m.titulo}));
+  const maes=nthSunday(year,5,2), pais=nthSunday(year,8,2);
+  list.push({dia:maes.getDate(),mes:maes.getMonth()+1,titulo:"Dia das Mães"});
+  list.push({dia:pais.getDate(),mes:pais.getMonth()+1,titulo:"Dia dos Pais"});
+  list.push({dia:12,mes:6,titulo:"Dia dos Namorados"});
+  const result = list.map(h=>({...h,tipo:"Feriado",id:`h-${year}-${h.dia}-${h.mes}`,recorrente:"Não",descricao:""}));
+  holidayCache[year]=result;
+  return result;
+}
+
+// ---------- Data ----------
+async function loadItems(){
+  try{ const res=await fetch(API_URL); const data=await res.json(); items=data.items||[]; }
+  catch(err){ showToast("Erro ao carregar dados"); console.error(err); }
+  renderAll();
+}
+async function apiCall(action,payload){
+  const res = await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...payload})});
+  return res.json();
+}
+
+function nonMemorial(list){ return list.filter(i=>i.tipo!=="Falecimento"); }
+function eventsForDay(day,month,year,includeMemorial=false){
+  let fromSheet = items.filter(it=>Number(it.dia)===day && Number(it.mes)===month);
+  if(!includeMemorial) fromSheet = nonMemorial(fromSheet);
+  const holidays = getHolidays(year).filter(h=>h.dia===day && h.mes===month);
+  return [...fromSheet,...holidays];
+}
+function badgeFor(ev,year){
+  if(ev.tipo==="Aniversário" && ev.ano_nascimento) return `${year-Number(ev.ano_nascimento)} anos`;
+  if((ev.tipo==="Falecimento"||ev.tipo==="Acontecimento") && ev.ano_nascimento){
+    const n = year-Number(ev.ano_nascimento);
+    return ev.tipo==="Falecimento" ? `${n} anos` : `${n} anos`;
+  }
+  return null;
+}
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function eventCardHtml(ev,year){
+  const badge = badgeFor(ev,year);
+  const color = TYPE_COLOR[ev.tipo]||'var(--text-faint)';
+  const isHoliday = ev.tipo==="Feriado";
+  return `<div class="event-card" data-id="${ev.id}" data-holiday="${isHoliday}">
+    <div class="event-dot" style="background:${color}"></div>
+    <div class="event-body">
+      <div class="event-title">${escapeHtml(ev.titulo)}</div>
+      <div class="event-meta">${String(ev.dia).padStart(2,'0')}/${String(ev.mes).padStart(2,'0')}</div>
+      ${isHoliday ? `<span class="event-tag" style="background:rgba(201,139,240,0.15);color:var(--feriado)">Feriado</span>` : ''}
+      ${ev.descricao ? `<div class="event-desc">${escapeHtml(ev.descricao)}</div>` : ''}
+    </div>
+    ${badge ? `<div class="event-age">${badge}</div>` : ''}
+  </div>`;
+}
+function attachCardHandlers(container){
+  container.querySelectorAll('.event-card').forEach(card=>{
+    card.onclick = ()=>{
+      if(card.dataset.holiday==="true") return;
+      const item = items.find(i=>String(i.id)===String(card.dataset.id));
+      if(item) openSheet(item);
+    };
+  });
+}
+
+// ---------- HOME ----------
+function renderHome(){
+  const today = new Date();
+  const tomorrow = addDays(today,1);
+  const todayEvs = eventsForDay(today.getDate(),today.getMonth()+1,today.getFullYear());
+  const tomEvs = eventsForDay(tomorrow.getDate(),tomorrow.getMonth()+1,tomorrow.getFullYear());
+
+  const wd = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"][today.getDay()];
+
+  let html = `<div class="home-top">
+    <div class="today-card">
+      <div class="label">Hoje</div>
+      <div class="date-big">${today.getDate()}</div>
+      <div class="weekday">${wd}, ${MESES[today.getMonth()]}</div>
+      ${todayEvs.length ? todayEvs.map(e=>eventCardHtml(e,today.getFullYear())).join('') : `<div class="empty-state" style="padding:14px 0;font-size:13px;">Nenhum evento hoje.</div>`}
+    </div>
+    <div class="mini-cal" id="miniCal"></div>
+  </div>
+
+  <div class="section-label">Amanhã</div>
+  <div class="tomorrow-card">
+    <div class="tcount">${tomEvs.length ? tomEvs.length+' evento(s) em '+tomorrow.getDate()+' de '+MESES[tomorrow.getMonth()] : 'Nenhum evento em '+tomorrow.getDate()+' de '+MESES[tomorrow.getMonth()]}</div>
+    ${tomEvs.map(e=>eventCardHtml(e,tomorrow.getFullYear())).join('')}
+  </div>`;
+
+  document.getElementById('page-home').innerHTML = html;
+  attachCardHandlers(document.getElementById('page-home'));
+  renderMiniCal();
+}
+
+function renderMiniCal(){
+  const box = document.getElementById('miniCal');
+  const today = new Date();
+  const y=today.getFullYear(), m=today.getMonth();
+  const firstDay = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  let html = `<div class="mini-head">${MESES[m].slice(0,3)}</div><div class="mini-grid">`;
+  for(let i=0;i<firstDay;i++) html += `<div class="mini-cell"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const evs = eventsForDay(d,m+1,y);
+    const isToday = d===today.getDate();
+    const dot = evs.length ? `<span class="mini-dot" style="background:${TYPE_COLOR[evs[0].tipo]||'var(--text-faint)'}"></span>` : '';
+    html += `<div class="mini-cell ${isToday?'today':''}">${d}${dot}</div>`;
+  }
+  html += `</div>`;
+  box.innerHTML = html;
+  box.onclick = ()=> goToPage('calendar');
+}
+
+// ---------- TIMELINE ----------
+function renderTimeline(){
+  const main = document.getElementById('page-timeline');
+  const year = new Date().getFullYear();
+  const today = new Date();
+  const todayKey = (today.getMonth()+1)*100 + today.getDate();
+
+  const all = [...nonMemorial(items).map(i=>({...i})), ...getHolidays(year)];
+  all.forEach(e=>{ e._key = Number(e.mes)*100+Number(e.dia); });
+  all.sort((a,b)=>{
+    const ka = a._key<todayKey ? a._key+1300 : a._key;
+    const kb = b._key<todayKey ? b._key+1300 : b._key;
+    return ka-kb;
+  });
+
+  if(!all.length){ main.innerHTML = `<div class="empty-state">Nenhum evento cadastrado ainda.<br>Toque no + para adicionar.</div>`; return; }
+
+  let html='', lastMonth=null;
+  all.forEach(ev=>{
+    if(ev.mes!==lastMonth){ html += `<div class="timeline-month">${MESES[ev.mes-1]}</div>`; lastMonth=ev.mes; }
+    html += eventCardHtml(ev,year);
+  });
+  main.innerHTML = html;
+  attachCardHandlers(main);
+}
+
+// ---------- CALENDAR ----------
+function renderCalendarBig(){
+  const main = document.getElementById('page-calendar');
+  const y=calDate.getFullYear(), m=calDate.getMonth();
+  const firstDay = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const today = new Date();
+
+  let html = `<div class="cal-header">
+    <button class="nav-btn2" id="prevMonth">‹</button>
+    <div class="month-label">${MESES[m]} ${y}</div>
+    <button class="nav-btn2" id="nextMonth">›</button>
+  </div>
+  <div class="weekdays">${DOW.map(d=>`<span>${d}</span>`).join('')}</div>
+  <div class="cal-grid">`;
+  for(let i=0;i<firstDay;i++) html += `<div class="day-cell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const evs = eventsForDay(d,m+1,y);
+    const isToday = today.getFullYear()===y && today.getMonth()===m && today.getDate()===d;
+    const dots = evs.slice(0,4).map(e=>`<span style="background:${TYPE_COLOR[e.tipo]||'var(--text-faint)'}"></span>`).join('');
+    html += `<div class="day-cell ${isToday?'today':''}" data-day="${d}"><div class="num">${d}</div><div class="dots">${dots}</div></div>`;
+  }
+  html += `</div>
+  <div class="legend">
+    <span><i style="background:var(--aniversario)"></i>Aniversário</span>
+    <span><i style="background:var(--acontecimento)"></i>Acontecimento</span>
+    <span><i style="background:var(--feriado)"></i>Feriado</span>
+  </div>
+  <div id="dayDetail"></div>`;
+  main.innerHTML = html;
+
+  document.getElementById('prevMonth').onclick = ()=>{ calDate.setMonth(calDate.getMonth()-1); renderCalendarBig(); };
+  document.getElementById('nextMonth').onclick = ()=>{ calDate.setMonth(calDate.getMonth()+1); renderCalendarBig(); };
+  main.querySelectorAll('.day-cell:not(.empty)').forEach(cell=>{
+    cell.onclick = ()=> showDayDetail(Number(cell.dataset.day), m+1, y);
+  });
+  if(today.getFullYear()===y && today.getMonth()===m) showDayDetail(today.getDate(), m+1, y);
+}
+function showDayDetail(day,month,year){
+  const evs = eventsForDay(day,month,year);
+  const box = document.getElementById('dayDetail');
+  if(!box) return;
+  if(!evs.length){ box.innerHTML = `<div class="empty-state" style="padding:24px 10px;">Nenhum evento em ${day} de ${MESES[month-1]}.</div>`; return; }
+  box.innerHTML = `<div class="timeline-month">${day} de ${MESES[month-1]}</div>` + evs.map(ev=>eventCardHtml(ev,year)).join('');
+  attachCardHandlers(box);
+}
+
+// ---------- MEMORIAL ----------
+function renderMemorial(){
+  const list = items.filter(i=>i.tipo==="Falecimento");
+  const box = document.getElementById('memorialList');
+  if(!list.length){ box.innerHTML = `<div class="empty-state">Nenhum falecimento registrado.</div>`; return; }
+  const year = new Date().getFullYear();
+  list.sort((a,b)=> (a.mes*100+a.dia)-(b.mes*100+b.dia));
+  box.innerHTML = list.map(ev=>eventCardHtml(ev,year)).join('');
+  attachCardHandlers(box);
+}
+
+// ---------- Page nav ----------
+function goToPage(page){
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  if(page==='home') renderHome();
+  if(page==='timeline') renderTimeline();
+  if(page==='calendar') renderCalendarBig();
+}
+document.querySelectorAll('.nav-btn').forEach(b=> b.onclick = ()=> goToPage(b.dataset.page));
+
+function renderAll(){
+  renderHome(); renderTimeline(); renderCalendarBig();
+}
+
+// ---------- Settings / Memorial overlays ----------
+const overlaySettings = document.getElementById('overlaySettings');
+document.getElementById('btnSettings').onclick = ()=> overlaySettings.classList.add('show');
+document.getElementById('closeSettings').onclick = ()=> overlaySettings.classList.remove('show');
+overlaySettings.onclick = e=>{ if(e.target===overlaySettings) overlaySettings.classList.remove('show'); };
+
+const overlayMemorial = document.getElementById('overlayMemorial');
+document.getElementById('openMemorial').onclick = ()=>{ overlaySettings.classList.remove('show'); renderMemorial(); overlayMemorial.classList.add('show'); };
+document.getElementById('closeMemorial').onclick = ()=> overlayMemorial.classList.remove('show');
+overlayMemorial.onclick = e=>{ if(e.target===overlayMemorial) overlayMemorial.classList.remove('show'); };
+
+// ---------- Edit/create sheet ----------
+const overlay = document.getElementById('overlay');
+
+function refreshPills(){
+  document.querySelectorAll('#typePills .type-pill').forEach(p=>{
+    const active = p.dataset.v===editingType;
+    p.classList.toggle('active',active);
+    p.style.background = active ? TYPE_COLOR[p.dataset.v] : '';
+  });
+  document.querySelectorAll('#recPills .type-pill').forEach(p=>{
+    const active = p.dataset.v===editingRec;
+    p.classList.toggle('active',active);
+    p.style.background = active ? 'var(--accent)' : '';
+  });
+  const label = document.getElementById('anoLabel');
+  const hint = document.getElementById('anoHint');
+  if(editingType==='Aniversário'){
+    label.textContent = 'Idade atual (opcional)';
+    hint.textContent = 'Informe a idade que a pessoa tem agora — o app calcula o ano de nascimento e atualiza a idade automaticamente todo ano.';
+  } else {
+    label.textContent = 'Há quanto tempo aconteceu? (opcional)';
+    hint.textContent = editingType==='Falecimento'
+      ? 'Informe quantos anos atrás isso ocorreu — o app calcula e atualiza sozinho a cada ano.'
+      : 'Informe quantos anos atrás esse acontecimento ocorreu (opcional).';
+  }
+}
+document.querySelectorAll('#typePills .type-pill').forEach(p=> p.onclick = ()=>{ editingType=p.dataset.v; refreshPills(); });
+document.querySelectorAll('#recPills .type-pill').forEach(p=> p.onclick = ()=>{ editingRec=p.dataset.v; refreshPills(); });
+
+function openSheet(item){
+  document.getElementById('sheetTitle').textContent = item ? "Editar evento" : "Novo evento";
+  document.getElementById('f_id').value = item ? item.id : '';
+  document.getElementById('f_titulo').value = item ? item.titulo : '';
+  document.getElementById('f_dia').value = item ? item.dia : '';
+  mesSelect.value = item ? item.mes : (calDate.getMonth()+1);
+  editingType = item ? item.tipo : 'Aniversário';
+  editingRec = item ? (item.recorrente||'Sim') : 'Sim';
+
+  let anoInputVal = '';
+  if(item && item.ano_nascimento){
+    const refYear = Number(item.ano_nascimento);
+    if(editingType==='Aniversário') anoInputVal = ageFromRefYear(refYear, Number(item.dia), Number(item.mes));
+    else anoInputVal = new Date().getFullYear() - refYear;
+  }
+  document.getElementById('f_ano').value = anoInputVal;
+  document.getElementById('f_descricao').value = item ? (item.descricao||'') : '';
+  refreshPills();
+  document.getElementById('btnDelete').style.display = item ? 'block' : 'none';
+  overlay.classList.add('show');
+}
+function closeSheet(){ overlay.classList.remove('show'); }
+document.getElementById('fabAdd').onclick = ()=> openSheet(null);
+document.getElementById('closeSheet').onclick = closeSheet;
+overlay.onclick = e=>{ if(e.target===overlay) closeSheet(); };
+
+document.getElementById('btnSave').onclick = async ()=>{
+  const titulo = document.getElementById('f_titulo').value.trim();
+  const dia = Number(document.getElementById('f_dia').value);
+  const mes = Number(mesSelect.value);
+  if(!titulo || !dia || dia<1 || dia>31){ showToast("Preencha título e dia corretamente"); return; }
+
+  const id = document.getElementById('f_id').value;
+  const inputVal = document.getElementById('f_ano').value;
+  let ano_nascimento = '';
+  if(inputVal!==''){
+    const n = Number(inputVal);
+    ano_nascimento = editingType==='Aniversário' ? birthYearFromAge(n,mes,dia) : (new Date().getFullYear()-n);
+  }
+
+  const item = { titulo, dia, mes, ano_nascimento, tipo:editingType, descricao:document.getElementById('f_descricao').value.trim(), recorrente:editingRec };
+
+  const btn = document.getElementById('btnSave');
+  btn.textContent='Salvando...'; btn.disabled=true;
+  try{
+    if(id){ item.id=id; await apiCall('update',{item}); } else { await apiCall('create',{item}); }
+    await loadItems();
+    closeSheet();
+    showToast("Salvo!");
+  }catch(err){ showToast("Erro ao salvar"); console.error(err); }
+  btn.textContent='Salvar'; btn.disabled=false;
+};
+
+document.getElementById('btnDelete').onclick = async ()=>{
+  const id = document.getElementById('f_id').value;
+  if(!id) return;
+  if(!confirm("Excluir este evento?")) return;
+  try{ await apiCall('delete',{id}); await loadItems(); closeSheet(); showToast("Excluído"); }
+  catch(err){ showToast("Erro ao excluir"); }
+};
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+loadItems();
+</script>
+</body>
+</html>
